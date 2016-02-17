@@ -14,6 +14,7 @@ class TP_WC_2Parale_Tracking extends WC_Integration {
         // Load user variables
         $this->campaign_unique = $this->get_option('campaign_unique');
         $this->campaign_secret = $this->get_option('campaign_secret');
+        $this->debug_mode = $this->get_option('debug_mode');
 
         // Save settings if the we are in the right section
         if ( isset( $_POST[ 'section' ] ) && $this->id === $_POST[ 'section' ] ) {
@@ -38,13 +39,27 @@ class TP_WC_2Parale_Tracking extends WC_Integration {
                 'desc_tip'    => true,
                 'default'     => '',
             ),
+            'debug_mode' => array(
+                'title'       => __( 'Debug mode', 'wc-2parale-tracking' ),
+                'description' => __( 'If this is checked, then the tracking code will not be loaded, but rather the parameters will be sent to the JS console', 'wc-2parale-tracking' ),
+                'desc_tip'    => true,
+                'type'        => 'checkbox',
+                'default'     => 'no',
+            ),
         );
     }
 
     public function add_2parale_code($order_id) {
         $order = $this->parse_order_data($order_id);
 
-        printf("<iframe height='1' width='1' scrolling='no' marginheight='0' marginwidth='0' frameborder='0' src='//event.2parale.ro/events/salecheck?amount=%s&campaign_unique=%s&confirm=%s&transaction_id=%s&description=%s'></iframe>",
+        $output = '';
+        if($this->debug_mode === "yes") {
+            $output = "<script type='text/javascript'>var tp_values={amount:%s,unique:'%s',confirm:'%s',transaction_id:'%s',description:'%s'};console.log('2Parale tracking code values: ',tp_values);</script>";
+        } else {
+            $output = "<iframe height='1' width='1' scrolling='no' marginheight='0' marginwidth='0' frameborder='0' src='//event.2parale.ro/events/salecheck?amount=%s&campaign_unique=%s&confirm=%s&transaction_id=%s&description=%s'></iframe>";
+        }
+
+        printf($output,
             urlencode($order['amount']),
             urlencode($this->campaign_unique),
             urlencode($this->campaign_secret),
