@@ -14,6 +14,8 @@ class TP_WC_2Parale_Tracking extends WC_Integration {
         // Load user variables
         $this->campaign_unique = $this->get_option('campaign_unique');
         $this->campaign_secret = $this->get_option('campaign_secret');
+        $this->tax_mode = $this->get_option('tax_mode');
+        $this->tax_amount = $this->get_option('tax_amount');
         $this->debug_mode = $this->get_option('debug_mode');
 
         // Save settings if the we are in the right section
@@ -39,10 +41,25 @@ class TP_WC_2Parale_Tracking extends WC_Integration {
                 'desc_tip'    => true,
                 'default'     => '',
             ),
+            'tax_mode' => array(
+                'title'       => __( 'Taxation mode', 'wc-2parale-tracking' ),
+                'type'        => 'select',
+                'default'     => 'auto',
+                'options'     => array(
+                    'auto'      => __( 'I have set up taxes in WooCommerce, use those', 'wc-2parale-tracking' ),
+                    'manual'    => __( 'I haven\'t set up taxes in WooCommerce, but I need to subtract the amount below as VAT or some other tax', 'wc-2parale-tracking' ),
+                ),
+            ),
+            'tax_amount' => array(
+                'title'       => __( 'Tax amount', 'wc-2parale-tracking' ),
+                'description' => __( 'Use this amount as the tax percentage if you need to deduct taxes from product prices (if you selected this option above)', 'wc-2parale-tracking' ),
+                'desc_tip'    => false,
+                'type'        => 'decimal',
+                'placeholder' => 'e.g. 20, which means 20%',
+            ),
             'debug_mode' => array(
                 'title'       => __( 'Debug mode', 'wc-2parale-tracking' ),
                 'description' => __( 'If this is checked, then the tracking code will not be loaded, but rather the parameters will be sent to the JS console', 'wc-2parale-tracking' ),
-                'desc_tip'    => true,
                 'type'        => 'checkbox',
                 'default'     => 'no',
             ),
@@ -82,6 +99,11 @@ class TP_WC_2Parale_Tracking extends WC_Integration {
             return $result;
 
         $result['amount'] = $order->get_total() - $order->get_total_tax() - $order->get_total_shipping();
+        if($this->tax_mode === "manual") {
+            $result['amount'] *= 10000;
+            $result['amount'] /= 100 + floatval($this->tax_amount);
+            $result['amount'] = 0.01 * round($result['amount']);
+        }
 
         $result['transaction_id'] = $order->get_order_number();
 
